@@ -39,47 +39,52 @@ functions{
                            real discount_factor,
                            int T_f, // number of periods forward
                            matrix X_f, // projected X_f for T_f periods for each bridge
-                           vector[] spending_f // spending in first period of sim
+                           vector spending_f // spending in first period of sim
                           ){
-    vector[N] out[3];
-    int deck_health_sim[N+(T_f*B)];
-    int superstructure_health_sim[N+(T_f*B)];
-    int substructure_health_sim[N+(T_f*B)];
-    vector[N+(T_f*B)] discounted_spending;
+    vector[N+(T_f*B)] out[3];
+    int deck_health_sim_f[N+(T_f*B)];
+    int superstructure_health_sim_f[N+(T_f*B)];
+    int substructure_health_sim_f[N+(T_f*B)];
+    vector[N+(T_f*B)] discounted_spending_f;
     matrix[N+(T_f*B), M+1] X_aug_f;
   
     int t_b;
     int n_b;
+    int n_b_f;
     int n;
     
+    n_b_f = 1;
     for(b in 1:B){
       t_b = T_b[b];
       n_b = N_b[b];
+
+      deck_health_sim_f[n_b_f : n_b_f + t_b -1] = deck_health[n_b : n_b + t_b -1];
+      superstructure_health_sim_f[n_b_f : n_b_f + t_b -1] = superstructure_health[n_b : n_b + t_b -1];
+      substructure_health_sim_f[n_b_f : n_b_f + t_b -1] = substructure_health[n_b : n_b + t_b -1];
       
-      deck_health_sim[n_b : n_b + t_b -1] = deck_health[n_b : n_b + t_b -1];
-      superstructure_health_sim[n_b : n_b + t_b -1] = superstructure_health[n_b : n_b + t_b -1];
-      substructure_health_sim[n_b : n_b + t_b -1] = substructure_health[n_b : n_b + t_b -1];
-      
-      discounted_spending[n_b:(n_b + t_b - 1 + T_f)] = getDiscountingMatrix((t_b+T_f), discount_factor) * 
+      discounted_spending_f[n_b_f:(n_b_f + t_b - 1 + T_f)] = getDiscountingMatrix((t_b+T_f), discount_factor) * 
                       append_row( spending[n_b:(n_b + t_b - 1)], append_row(spending_f[b],rep_vector(0, T_f - 1)));
       
-      X_aug_f[n_b:(n_b + t_b - 1 + T_f)] = append_col(discounted_spending[n_b:(n_b + t_b - 1 + T_f)], 
-                                            append_row(X[n_b:(n_b + t_b - 1 + T_f)], X_f[(T_f*(b-1) + 1) : T_f*b ])
+      X_aug_f[n_b_f:(n_b_f + t_b - 1 + T_f)] = append_col(discounted_spending_f[n_b_f:(n_b_f + t_b - 1 + T_f)], 
+                                            append_row(X[n_b:(n_b + t_b - 1)], X_f[(T_f*(b-1) + 1) : T_f*b ])
                                            );
       
       
       for(t in 1:T_f){
-        n = n_b + t_b - 1 + t;
-        deck_health_sim[n] = categorical_rng(softmax(beta_deck[deck_health_sim[n-1]] * X_aug_f[n]'));
-        superstructure_health_sim[n] = categorical_rng(softmax(beta_superstructure[superstructure_health_sim[n-1]] * X_aug_f[n]'));
-        substructure_health_sim[n] = categorical_rng(softmax(beta_substructure[substructure_health_sim[n-1]] * X_aug_f[n]'));
+        n = n_b_f + t_b - 1 + t;
+        deck_health_sim_f[n] = categorical_rng(softmax(beta_deck[deck_health_sim_f[n-1]] * X_aug_f[n]'));
+        superstructure_health_sim_f[n] = categorical_rng(softmax(beta_superstructure[superstructure_health_sim_f[n-1]] * X_aug_f[n]'));
+        substructure_health_sim_f[n] = categorical_rng(softmax(beta_substructure[substructure_health_sim_f[n-1]] * X_aug_f[n]'));
   
       }
+      // augment rolling index
+      n_b_f = n_b_f + t_b + T_f;
+      
     }
   
-  out[1] = to_vector(deck_health_sim);
-  out[2] = to_vector(superstructure_health_sim);
-  out[3] = to_vector(substructure_health_sim);
+  out[1] = to_vector(deck_health_sim_f);
+  out[2] = to_vector(superstructure_health_sim_f);
+  out[3] = to_vector(substructure_health_sim_f);
   return(out);
   
   }
