@@ -1,0 +1,50 @@
+---
+title: "Bridge Condition Decline and Recovery: A Markov State Approach"
+author: "S Vasserman & J Savage"
+date: "January 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+As part of a big project with the Massachusetts Department of Transportation (joint with [Valentin Bolotnyy](https://scholar.harvard.edu/bolotnyy)) that I've been working on for my PhD, I came across an interesting problem, ripe for Bayesian decision theory. Being the procrastinator that I am, I decided to take StanCon2018 as the vacation (from modeling humans - hard!) I'd been waiting for to push through a model. Naturally, Jim, being nearby, overheard me asking Ben Goodrich about modeling choices, thought for a minute, proposed a neater, more flexible model to do what I wanted, and the jam was on.
+
+The state of Massachusetts has about 4,500 bridges in its jurisdiction. The highway and bridge division of the Department of Transportation (DOT) is responsible for the construction and upkeep of these bridges, the majority of which is orchestrated by a series of projects that the DOT originates, plans, auctions off to contractors and then supervises/manages. Within that lies a critical decision that the DOT has to make each time they are given a budget: which bridges should get maintenance/construction work and when?
+
+To answer this question, the folks at the DOT rely on a number of different sources and priorities, but we'll focus on the most straight-forward one: structural integrity. As anything else, bridges wear over time - metals oxydize, roads get worn with weather and use; things naturally decay. To track the conditions of each bridge, the DOT sends inspectors to assess each bridge every two years (or less!). The inspectors assess each different part of the bridge, and assign it a score from 1 to 9, where 9 is the healthiest and a score of 4 or below is cause for attention. 
+
+INSERT EXAMPLE IMAGE OR SHINY PLOT HERE.
+
+### Candidate Models of Bridge Condition Scores
+
+The health scores assigned at inspection are used by the DOT as sufficient statistics for each bridge component's health when making project decisions.
+
+As a first order of business, therefore, I set out to model the changes in health scores over time, with respect to the observable information that I had. I wound up considering three types of models:
+
+1. A "birth-and-death process" count model.
+2. An AR1 continuous latent state model.
+3. A markov state model.
+
+INSERT BRIEF DESCRIPTIONS OF the 1. and 2. models and motivate model 3.
+
+### Markov State Models: A Primer
+
+The markov state approach can be thought of as a hybrid of the count model and the AR1 model. Like the AR1 model, it treats each score at period $t-1$ as a state, which transitions to another state at period $t$. Like the count model, it focuses on discrete transitions between scores. 
+
+The basic model is described as follows:
+
+At every period $t$, a bridge $b$'s health is fully described by: 
+
+  (a) Its health score $s_{b,t} \in \{1, \ldots, 9 \}$
+  (b) A vector of $b$-$t$ specific characteristics: $X_{b,t}$.
+  
+The distribution of the bridge's health states in period $t+1$ is determined entirely by (a) and (b). 
+
+In particular, writing $\vec{s_{b,t}}$ as a 9-dimensional vector with a $1$ on $b$'s score at period $t$ and zeros otherwise, the distribution of $\vec{s}_{b,t+1}$ can be dscribed by:
+$$ 
+\vec{s_{b,t+1}} = A(f(X_{b,t})) \vec{s_{b,t}}.
+$$
+where $A(X_{b,t})$ is a matrix of transition probabilities as a deterministic function of observables $X$, and each element of the vectors indexes a prospective state in period $t+1$. For example, if bridge $b$ has score $5$ at period $t$ then the probability that it will have score $5$ at period $t+1$ is given by the fifth element of the vector $\vec{f(}X_{b,t})$.
+

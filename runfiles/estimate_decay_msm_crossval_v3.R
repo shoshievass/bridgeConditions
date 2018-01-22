@@ -82,7 +82,7 @@ B <- length(unique(bridge_ts_train$bridgeID))
 bridge_ts_train <- bridge_ts_train %>%
   left_join(T_b_df)
 
-X_bridge_train <- model.matrix(~ scale(age), data = bridge_ts_train)
+X_bridge_train <- model.matrix(~ scale(age) + scale(Structure_Length), data = bridge_ts_train)
 
 
 ## get test data
@@ -155,13 +155,13 @@ B_test <- length(unique(bridge_ts_test$bridgeID))
 bridge_ts_test <- bridge_ts_test %>%
   left_join(T_b_df_test)
 
-X_bridge_test <- model.matrix(~ scale(age), data = bridge_ts_test)
+X_bridge_test <- model.matrix(~ scale(age) + scale(Structure_Length), data = bridge_ts_test)
 
 library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
-dgp_model <- stan_model("Models/msm_bridge_decay_v2_crosseval.stan")
+dgp_model <- stan_model("Models/msm_bridge_decay_v3_crosseval.stan")
 
 w <- 1e6 # for scaling spending
 
@@ -195,26 +195,20 @@ real_data_list <- list(
   run_estimation = 1
 )
 
-system.time(model_fit_opt <- optimizing(dgp_model, data = real_data_list, verbose = T))
-
-get_opt_est <- function(x, par) {
-  x$par[grepl(par, names(x$par))]
-}
-
-# mle_beta_deck
-# mle_beta_deck_vec <- as.matrix(mle_beta_deck)
+# system.time(model_fit_opt <- optimizing(dgp_model, data = real_data_list, verbose = T))
+# # 
+# get_opt_est <- function(x, par) {
+#   x$par[grepl(par, names(x$par))]
+# }
 # 
-# mle_beta_deck <- get_opt_est(model_fit_opt, "\\bbeta_deck\\b")
-# mle_beta_superstructure <- get_opt_est(model_fit_opt, "\\bbeta_superstructure\\b")
-# mle_beta_substructure <- get_opt_est(model_fit_opt, "\\bbeta_substructure\\b")
-mle_discount_scalar <- get_opt_est(model_fit_opt, "\\bdiscount_scalar\\b")
-mle_X_aug <- get_opt_est(model_fit_opt, "\\bX_aug\\b")
-arm::invlogit(mle_discount_scalar)
+# mle_discount_scalar <- get_opt_est(model_fit_opt, "\\bdiscount_scalar\\b")
+# mle_X_aug <- get_opt_est(model_fit_opt, "\\bX_aug\\b")
+# arm::invlogit(mle_discount_scalar)
 
 estimated_model <- sampling(dgp_model, data = real_data_list, iter = 500, chains = 4, cores = 4)
 
 print(estimated_model, pars="discount_scalar")
-print(estimated_model)
+print(estimated_model, pars = "beta")
 
 log_posterior_mass <- get_posterior_mean(estimated_model, pars = "log_posterior_mass")[, 5]
 sum(log_posterior_mass)
@@ -280,5 +274,118 @@ oos_lpm_df %>%
     y = "Minimum Outcome State"
   )
 
-ggsave("graphs/cross_val_demo.png", height = 8, width = 12)
-save.image("cross_val_jan12.rdata")
+ggsave("graphs/cross_val_demo_v3.png", height = 8, width = 12)
+save.image("cross_val_jan12_v3.rdata")
+
+expose_stan_functions("Models/msm_bridge_decay_v2.stan")
+
+N_ts_sm = nrow(bridge_ts_test)
+B_ts_sm = length(unique(bridge_ts_test$bridgeID))
+M_ts_sm = ncol(X_bridge_test)
+H_ts_sm = max(unique(bridge_ts_test$deck))
+
+convertMatrixArrayParam <- function(vectorized_mat, d1, d2, d3){
+  #Assumes the matrix array representation is matrix[d2, d3] Mat[d1] in Stan
+  vectorized_array <- array(vectorized_mat, dim = c(d1, d2, d3))
+  matrix_array <- lapply(1:d1, function(i) vectorized_array[i,,])
+  return(matrix_array)
+}
+
+bayes_beta_deck <- get_posterior_mean(estimated_model, pars = "beta_deck")[, 5]
+bayes_beta_superstructure <- get_posterior_mean(estimated_model, pars = "beta_superstructure")[, 5]
+bayes_beta_substructure <- get_posterior_mean(estimated_model, pars = "beta_substructure")[, 5]
+bayes_discount_scalar <- get_posterior_mean(estimated_model, pars = "discount_scalar")[, 5]
+
+arm::invlogit(bayes_discount_scalar)
+
+bayes_beta_deck_list <- convertMatrixArrayParam(bayes_beta_deck, H_ts_sm, H_ts_sm, (M_ts_sm+1))
+bayes_beta_superstructure_list <- convertMatrixArrayParam(bayes_beta_superstructure, H_ts_sm, H_ts_sm, (M_ts_sm+1))
+bayes_beta_substructure_list <- convertMatrixArrayParam(bayes_beta_substructure, H_ts_sm, H_ts_sm, (M_ts_sm+1))
+
+propegateX <- function(df, t){
+  
+  new_age <- df$age + 1:t
+  # print(new_age)
+  new_data_year <- df$data_year + 1:t
+  # print(new_data_year)
+  
+  fac_df <- df %>% select(-age, -data_year)
+  
+  new_vals <- data.frame(
+    age = new_age,
+    data_year = new_data_year
+  ) %>% 
+    merge(fac_df)
+  
+  new_df <- rbind(df, new_vals)
+  return(new_df)
+}
+
+
+## get forward looking X_f
+bridge_ts_sm_f <- bridge_ts_test %>%
+  select(bridgeID, data_year, age, Structure_Length) %>%
+  group_by(bridgeID) %>%
+  summarize(
+    age = last(age) + 1,
+    data_year = last(data_year) + 1,
+    Structure_Length = last(Structure_Length)
+  ) %>%
+  group_by(bridgeID) %>%
+  do(propegateX(.,3))
+
+X_f <- model.matrix(~ scale(age) + scale(Structure_Length), data = bridge_ts_sm_f)
+
+spending_f <- c(5, rep(0,(B-1)))
+
+forecasted_states <- forecast_health_state_rng( N_ts_sm,
+                                                B_ts_sm,
+                                                H_ts_sm,
+                                                M_ts_sm,
+                                                as.array(bridge_ts_test$deck),
+                                                as.array(bridge_ts_test$superstructure),
+                                                as.array(bridge_ts_test$substructure),
+                                                T_b_df_test$T_b,
+                                                T_b_df_test$n_b,
+                                                X_bridge_test,
+                                                (bridge_ts_test$spending / w),
+                                                bayes_beta_deck_list,
+                                                bayes_beta_superstructure_list,
+                                                bayes_beta_substructure_list,
+                                                bayes_discount_scalar,
+                                                4, # number of periods forward = 1
+                                                X_f, # projected X_f for T_f periods for each bridge
+                                                spending_f # spending in first period of sim
+)
+
+forecast_df <- bridge_ts_test %>%
+  select(bridgeID, data_year, age, Structure_Length) %>% as.tibble() %>%
+  mutate(
+    type = "data"
+  )
+
+bridge_ts_sm_f <- bridge_ts_sm_f %>% ungroup() %>% as.tibble() %>% mutate( type = "forecast")
+
+forecast_df <- rbind(forecast_df,bridge_ts_sm_f ) %>%
+  arrange(bridgeID, data_year) %>%
+  mutate(
+    deck_health = as.vector(unlist(forecasted_states[1])),
+    superstructure_health = as.vector(unlist(forecasted_states[2])),
+    substructure_health = as.vector(unlist(forecasted_states[3]))
+  ) %>%
+  ungroup() %>%
+  mutate(
+    min_health = pmin(deck_health, superstructure_health, substructure_health)
+  )
+
+sample_bridgeIDs <- unique(forecast_df$bridgeID)
+
+forecast_df %>%
+  filter(bridgeID %in% forecast_df$bridgeID[1]) %>%
+  ggplot(aes(x = data_year, y = min_health, color = type)) + geom_line() + facet_wrap(~bridgeID)
+
+
+forecast_df %>%
+  filter(bridgeID %in% sample_bridgeIDs[1:5]) %>%
+  ggplot(aes(x = data_year, y = min_health, color = type)) + geom_line() + facet_wrap(~bridgeID)
+
