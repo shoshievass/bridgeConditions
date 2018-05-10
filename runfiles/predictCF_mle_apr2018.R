@@ -1,4 +1,4 @@
-load("data/mle_estimation_apr26.rdata")
+load("data/mle_estimation_apr27.rdata")
 library(rstan); library(tidyverse)
 expose_stan_functions("Models/msm_bridge_decay_v6.stan")
 
@@ -35,22 +35,22 @@ bayes_beta_superstructure_list <- convertMatrixArrayParam(bayes_beta_superstruct
 bayes_beta_substructure_list <- convertMatrixArrayParam(bayes_beta_substructure, H_ts_sm, H_ts_sm, (M_ts_sm+1))
 
 propegateX <- function(df, t){
-  
+
   new_age <- df$age + 1:t
   # print(new_age)
   new_data_year <- df$data_year + 1:t
   # print(new_data_year)
-  
+
   fac_df <- df %>% select(-age, -data_year)
   df$future_obs_index <- 0
-  
+
   new_vals <- data.frame(
     age = new_age,
     data_year = new_data_year,
     future_obs_index = 1:t
-  ) %>% 
+  ) %>%
     merge(fac_df)
-  
+
   new_df <- rbind(df, new_vals)
   return(new_df)
 }
@@ -117,13 +117,13 @@ forecast_df <- bridge_ts_train_features %>%
   )
 
 spending_cf_df <- data.frame(spending = spending_f, spending_in_year = 2018, bridgeID = unique(bridge_ts_train$bridgeID), data_year = 2018)
-forecast_df_cf <- bridge_ts_sm_f %>% 
+forecast_df_cf <- bridge_ts_sm_f %>%
   ungroup() %>%
   left_join(spending_cf_df, by = c("bridgeID", "data_year")) %>%
-  mutate( 
+  mutate(
     type = "forecast",
     spending = ifelse(spending == 0, NA, spending)
-    ) %>% 
+    ) %>%
   filter(future_obs_index > 0)
 
 forecast_df <- rbind(forecast_df,forecast_df_cf ) %>%
@@ -153,7 +153,7 @@ forecast_df %>%
 
 sample_bridges <- sample(unique_bridgeIDs, 12)
 
-sample_bridge_spending <- forecast_df %>% 
+sample_bridge_spending <- forecast_df %>%
   filter(bridgeID %in% sample_bridges) %>%
   select(bridgeID, spending, spending_in_year) %>%
   filter(complete.cases(.)) %>%
