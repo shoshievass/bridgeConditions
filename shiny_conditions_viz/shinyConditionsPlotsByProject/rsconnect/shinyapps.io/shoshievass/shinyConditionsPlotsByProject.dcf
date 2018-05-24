@@ -1,0 +1,10 @@
+name: shinyConditionsPlotsByProject
+title: shinyConditionsPlotsByProject
+username:
+account: shoshievass
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 223936
+bundleId: 1068023
+url: https://shoshievass.shinyapps.io/shinyConditionsPlotsByProject/
+when: 1510272820.12177

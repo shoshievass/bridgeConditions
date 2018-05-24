@@ -1,6 +1,7 @@
 library(tidyverse)
 library(skimr)
 library(ggridges)
+library(rstan)
 
 # Load complete time series
 load("data/bridge_timeseries_merged_apr2018.rdata")
@@ -187,7 +188,7 @@ library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
-dgp_model <- stan_model("Models/msm_bridge_decay_v6.stan")
+dgp_model <- stan_model("Models/msm_bridge_decay_v6_skinny.stan")
 
 w <- 1e6 # for scaling spending
 
