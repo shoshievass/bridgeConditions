@@ -1,10 +1,10 @@
-load("data/mle_estimation_apr27.rdata")
+load("data/estimation_june4.rdata")
 library(rstan); library(tidyverse)
 expose_stan_functions("Models/msm_bridge_decay_v6.stan")
 
 N_ts_sm = nrow(bridge_ts_train)
 B_ts_sm = length(unique(bridge_ts_train$bridgeID))
-M_ts_sm = ncol(X_bridge_train)
+M_ts_sm = ncol(X_train)
 H_ts_sm = max(unique(bridge_ts_train$deck))
 
 convertMatrixArrayParam <- function(vectorized_mat, d1, d2, d3){
@@ -28,11 +28,13 @@ bayes_discount_scalar <- get_opt_est(model_fit_opt, "\\bdiscount_scalar\\b")
 # bayes_beta_substructure <- get_posterior_mean(estimated_model, pars = "beta_substructure")[, 5]
 # bayes_discount_scalar <- get_posterior_mean(estimated_model, pars = "discount_scalar")[, 5]
 
-arm::invlogit(bayes_discount_scalar)
+# arm::invlogit(bayes_discount_scalar)
 
 bayes_beta_deck_list <- convertMatrixArrayParam(bayes_beta_deck, H_ts_sm, H_ts_sm, (M_ts_sm+1))
 bayes_beta_superstructure_list <- convertMatrixArrayParam(bayes_beta_superstructure, H_ts_sm, H_ts_sm, (M_ts_sm+1))
 bayes_beta_substructure_list <- convertMatrixArrayParam(bayes_beta_substructure, H_ts_sm, H_ts_sm, (M_ts_sm+1))
+
+# list_of_draws <- rstan::extract(estimated_model)
 
 propegateX <- function(df, t){
 
@@ -42,12 +44,12 @@ propegateX <- function(df, t){
   # print(new_data_year)
 
   fac_df <- df %>% select(-age, -data_year)
-  df$future_obs_index <- 0
+  df$future_obs_index <- 1
 
   new_vals <- data.frame(
     age = new_age,
     data_year = new_data_year,
-    future_obs_index = 1:t
+    future_obs_index = 2:(t+1)
   ) %>%
     merge(fac_df)
 
@@ -55,11 +57,16 @@ propegateX <- function(df, t){
   return(new_df)
 }
 
+bridge_ts_train_features <- data.frame(bridgeID = bridge_ts_train$bridgeID, data_year = bridge_ts_train$data_year) %>%
+  bind_cols(as.data.frame(X_train))
 
 ## get forward looking X_f
 bridge_ts_sm_f <- bridge_ts_train_features %>%
-  bind_cols(data.frame(bridgeID = bridge_ts_train$bridgeID, data_year = bridge_ts_train$data_year)) %>%
+  # bind_cols(data.frame(bridgeID = bridge_ts_train$bridgeID, data_year = bridge_ts_train$data_year)) %>%
   arrange(bridgeID, data_year) %>%
+  mutate(
+    age = bridge_ts_train$age
+  ) %>%
   group_by(bridgeID) %>%
   summarize_all(last) %>%
     mutate(
@@ -67,21 +74,27 @@ bridge_ts_sm_f <- bridge_ts_train_features %>%
     data_year = (data_year) + 1
   ) %>%
   group_by(bridgeID) %>%
-  do(propegateX(.,3))
+  do(propegateX(.,5)) %>%
+  ungroup()
 
 bridge_ts_sm_f_features <- bridge_ts_sm_f %>%
   ungroup() %>%
   bind_rows(bridge_ts_train_features %>%
-              bind_cols(data.frame(bridgeID = bridge_ts_train$bridgeID, data_year = bridge_ts_train$data_year, future_obs_index = 0))) %>%
-  select(-bridgeID, -data_year)
+              mutate(
+                future_obs_index = 0,
+                age = bridge_ts_train$age
+              )
+  ) %>%
+  arrange(bridgeID, data_year) %>%
+  mutate(age = scale(age))
 
-X_f <- model.matrix(~ . -1, data = bridge_ts_sm_f_features)
-X_f <- scale(X_f)
-X_f <- as.data.frame(X_f) %>% mutate(future_obs_index = bridge_ts_sm_f_features$future_obs_index) %>% dplyr::filter(future_obs_index > 0) %>% select(-future_obs_index)
-X_f <- as.matrix(X_f)
+X_f <- as.matrix(bridge_ts_sm_f_features %>% ungroup()  %>% dplyr::filter(future_obs_index > 0) %>%  dplyr::select(-bridgeID, -data_year, -future_obs_index))
 
 # spending_f <- c(5, rep(0,(B_ts_sm-1)))
 spending_f <- rbinom(B_ts_sm, 1, 0.3) * 15
+
+bridge_ts_train <- bridge_ts_train %>%
+  arrange(bridgeID, data_year)
 
 forecasted_states <- forecast_health_state_rng( N_ts_sm,
                                                 B_ts_sm,
@@ -92,21 +105,63 @@ forecasted_states <- forecast_health_state_rng( N_ts_sm,
                                                 as.array(bridge_ts_train$substructure),
                                                 T_b_df$T_b,
                                                 T_b_df$n_b,
-                                                X_bridge_train,
+                                                X_train,
                                                 (bridge_ts_train$spending / w),
                                                 bayes_beta_deck_list,
                                                 bayes_beta_superstructure_list,
                                                 bayes_beta_substructure_list,
                                                 bayes_discount_scalar,
-                                                3, # number of periods forward = 1
+                                                6, # number of periods forward = 1
                                                 X_f, # projected X_f for T_f periods for each bridge
                                                 spending_f # spending in first period of sim
 )
 
+
+get_forecast_at_draw <- function(i, draws){
+  bayes_beta_deck_list <- convertMatrixArrayParam(draws$beta_deck[i,,,], H_ts_sm, H_ts_sm, (M_ts_sm+1))
+  bayes_beta_superstructure_list <- convertMatrixArrayParam(draws$beta_superstructure[i,,,], H_ts_sm, H_ts_sm, (M_ts_sm+1))
+  bayes_beta_substructure_list <- convertMatrixArrayParam(draws$beta_substructure[i,,,], H_ts_sm, H_ts_sm, (M_ts_sm+1))
+
+  bayes_discount_scalar <- draws$discount_scalar[i]
+
+  forecasted_states <- forecast_health_state_rng( N_ts_sm,
+                                                  B_ts_sm,
+                                                  H_ts_sm,
+                                                  M_ts_sm,
+                                                  as.array(bridge_ts_train$deck),
+                                                  as.array(bridge_ts_train$superstructure),
+                                                  as.array(bridge_ts_train$substructure),
+                                                  T_b_df$T_b,
+                                                  T_b_df$n_b,
+                                                  X_train,
+                                                  (bridge_ts_train$spending / w),
+                                                  bayes_beta_deck_list,
+                                                  bayes_beta_superstructure_list,
+                                                  bayes_beta_substructure_list,
+                                                  bayes_discount_scalar,
+                                                  4, # number of periods forward = 1
+                                                  X_f, # projected X_f for T_f periods for each bridge
+                                                  spending_f # spending in first period of sim
+  )
+
+  return(forecasted_states)
+}
+#
+# forecast_list2 <- pmap(.f = get_forecast_at_draw, list(1:1000), list_of_draws)
+#
+# test <- forecast_list2 %>%
+#   reduce(.f = mean)
+#
+#
+#
+# sum_lists <- function(lists){
+#   out <- lapply(lists, function(x) mean(x))
+# }
+#
+# mean_forecasts <- apply(forecast_list, 2, function(x) mean(x))
+
 forecast_df <- bridge_ts_train_features %>%
   mutate(
-    bridgeID = bridge_ts_train$bridgeID,
-    data_year = bridge_ts_train$data_year,
     future_obs_index = 0,
     type = "data",
     spending = bridge_ts_train$spending,
@@ -116,7 +171,7 @@ forecast_df <- bridge_ts_train_features %>%
     spending = ifelse(spending == 0, NA, spending)
   )
 
-spending_cf_df <- data.frame(spending = spending_f, spending_in_year = 2018, bridgeID = unique(bridge_ts_train$bridgeID), data_year = 2018)
+spending_cf_df <- data.frame(spending = spending_f, spending_in_year = 2017, bridgeID = unique(bridge_ts_train$bridgeID), data_year = 2017)
 forecast_df_cf <- bridge_ts_sm_f %>%
   ungroup() %>%
   left_join(spending_cf_df, by = c("bridgeID", "data_year")) %>%
@@ -158,7 +213,7 @@ sample_bridge_spending <- forecast_df %>%
   select(bridgeID, spending, spending_in_year) %>%
   filter(complete.cases(.)) %>%
   mutate(
-    cf_spending = ifelse(spending_in_year == 2018, "Counterfactual Spending", "Historical Spending")
+    cf_spending = ifelse(spending_in_year == 2017, "Counterfactual Spending", "Historical Spending")
   )
 
 

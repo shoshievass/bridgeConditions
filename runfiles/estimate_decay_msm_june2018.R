@@ -4,7 +4,7 @@ library(ggridges)
 library(rstan)
 
 # Load complete time series
-load("data/bridge_timeseries_merged_apr2018.rdata")
+load("data/bridge_timeseries_june4.rdata")
 
 set.seed(4242)
 
@@ -33,6 +33,7 @@ bridge_ts_features <- bridge_ts %>%
     -spending,
     -start_year,
     -calendar_year,
+    -cndtn, #this is a 'bridge condition' var so bad for CFs
     # -time_lag,
     # -time_laps,
     -first_start_year,
@@ -43,7 +44,7 @@ bridge_ts_features <- bridge_ts %>%
     # -T_b,
     # -n_b,
     -num_projects,
-    -no_inspection,
+    # -no_inspection,
     -total_bridge_spending,
     -avg_bridge_spending,
     -proj_no
@@ -51,6 +52,14 @@ bridge_ts_features <- bridge_ts %>%
     # -superstructure_nm_rn_lag,
     # -substructure_nm_rn_lag,
     # -rn
+  )
+
+## Get rid of features that have missing vals; can't deal them atm
+bridge_ts_features <- bridge_ts_features %>%
+  select(
+    -appr_rail_036c,
+    -railings_036a,
+    -appr_rail_end_036d
   )
 
 X_full <- model.matrix(~ . - 1 - bridgeID, data = bridge_ts_features)
@@ -230,7 +239,7 @@ real_data_list <- list(
 
 system.time(model_fit_opt <- optimizing(dgp_model, data = real_data_list, init=1, verbose = T))
 
-save.image("data/mle_estimation_may10.rdata")
+save.image("data/bridge_estimation_june4b.rdata")
 
 #
 get_opt_est <- function(x, par) {
@@ -247,7 +256,7 @@ oos_log_posterior_mass <- get_opt_est(model_fit_opt, "\\bout_of_sample_lpm")
 
 estimated_model <- sampling(dgp_model, data = real_data_list, iter = 500, chains = 4, cores = 4)
 
-save.image("data/mle_estimation_may10.rdata")
+save.image("data/bridge_estimation_june4b.rdata")
 
 
 print(estimated_model, pars="discount_scalar")
