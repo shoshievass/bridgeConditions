@@ -247,12 +247,12 @@ model {
   // matrix[N_new, M_new+1] X_aug_new;
 
 
-  discount_scalar ~ normal(1,1);
+  discount_scalar ~ normal(0,1);
 
   for(i in 1:H){
-    to_vector(beta_deck[i]) ~ normal(0, 3);
-    to_vector(beta_superstructure[i]) ~ normal(0, 3);
-    to_vector(beta_substructure[i]) ~ normal(0, 3);
+    to_vector(beta_deck[i]) ~ normal(0, 2);
+    to_vector(beta_superstructure[i]) ~ normal(0, 2);
+    to_vector(beta_substructure[i]) ~ normal(0, 2);
   }
 
   X_aug = append_col(discounted_spending, X);

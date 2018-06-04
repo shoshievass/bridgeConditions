@@ -2,6 +2,8 @@ library(tidyverse)
 library(skimr)
 library(ggridges)
 library(rstan)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
 
 # Load complete time series
 load("data/bridge_timeseries_merged_apr2018.rdata")
@@ -230,7 +232,7 @@ real_data_list <- list(
 
 system.time(model_fit_opt <- optimizing(dgp_model, data = real_data_list, init=1, verbose = T))
 
-save.image("data/mle_estimation_may10.rdata")
+save.image("data/estimation_may29.rdata")
 
 #
 get_opt_est <- function(x, par) {
@@ -239,15 +241,15 @@ get_opt_est <- function(x, par) {
 
 mle_discount_scalar <- get_opt_est(model_fit_opt, "\\bdiscount_scalar\\b")
 # mle_X_aug <- get_opt_est(model_fit_opt, "\\bX_aug\\b")
-arm::invlogit(mle_discount_scalar)
+# arm::invlogit(mle_discount_scalar)
 mle_beta <- get_opt_est(model_fit_opt, "\\bbeta")
 log_posterior_mass <- get_opt_est(model_fit_opt, "\\blog_posterior_mass")
 oos_log_posterior_mass <- get_opt_est(model_fit_opt, "\\bout_of_sample_lpm")
 
 
-estimated_model <- sampling(dgp_model, data = real_data_list, iter = 500, chains = 4, cores = 4)
+estimated_model <- sampling(dgp_model, data = real_data_list, init =  model_fit_opt$par, iter = 500, chains = 4, cores = 4)
 
-save.image("data/mle_estimation_may10.rdata")
+save.image("data/estimation_may29.rdata")
 
 
 print(estimated_model, pars="discount_scalar")
