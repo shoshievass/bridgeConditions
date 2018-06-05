@@ -36,6 +36,7 @@ bayes_beta_substructure_list <- convertMatrixArrayParam(bayes_beta_substructure,
 
 # list_of_draws <- rstan::extract(estimated_model)
 
+# Ah-- this answers my question from before. Worth doing in Stan (this is what I do for our MSM model and it's like a gazillion times faster)?
 propegateX <- function(df, t){
 
   new_age <- df$age + 1:t
