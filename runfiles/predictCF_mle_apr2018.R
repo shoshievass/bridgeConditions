@@ -1,4 +1,4 @@
-load("data/estimation_june4.rdata")
+load("data/estimation_may29_sm.rdata")
 library(rstan); library(tidyverse)
 expose_stan_functions("Models/msm_bridge_decay_v6.stan")
 
@@ -34,7 +34,7 @@ bayes_beta_deck_list <- convertMatrixArrayParam(bayes_beta_deck, H_ts_sm, H_ts_s
 bayes_beta_superstructure_list <- convertMatrixArrayParam(bayes_beta_superstructure, H_ts_sm, H_ts_sm, (M_ts_sm+1))
 bayes_beta_substructure_list <- convertMatrixArrayParam(bayes_beta_substructure, H_ts_sm, H_ts_sm, (M_ts_sm+1))
 
-# list_of_draws <- rstan::extract(estimated_model)
+list_of_draws <- rstan::extract(estimated_model)
 
 propegateX <- function(df, t){
 
@@ -116,6 +116,7 @@ forecasted_states <- forecast_health_state_rng( N_ts_sm,
                                                 spending_f # spending in first period of sim
 )
 
+# t <- lapply(forecasted_states, function(i) ifelse(i==-999, NA, i))
 
 get_forecast_at_draw <- function(i, draws){
   bayes_beta_deck_list <- convertMatrixArrayParam(draws$beta_deck[i,,,], H_ts_sm, H_ts_sm, (M_ts_sm+1))
@@ -144,21 +145,15 @@ get_forecast_at_draw <- function(i, draws){
                                                   spending_f # spending in first period of sim
   )
 
-  return(forecasted_states)
+  forecasted_states_edited <- lapply(forecasted_states, function(i) ifelse(i==-999, NA, i))
+
+  return(forecasted_states_edited)
 }
-#
-# forecast_list2 <- pmap(.f = get_forecast_at_draw, list(1:1000), list_of_draws)
-#
-# test <- forecast_list2 %>%
-#   reduce(.f = mean)
-#
-#
-#
-# sum_lists <- function(lists){
-#   out <- lapply(lists, function(x) mean(x))
-# }
-#
-# mean_forecasts <- apply(forecast_list, 2, function(x) mean(x))
+
+forecast_list <- pmap(.f = get_forecast_at_draw, list(1:1000), list_of_draws)
+forecast_sims <- lapply(1:1000, function(i) mean(unlist(forecast_list[[i]]), na.rm=T))
+forecast_sims_by_part <- lapply(1:3, function(i) mean(unlist(lapply(1:1000, function(j) forecast_list[[j]][i])),na.rm=T))
+
 
 forecast_df <- bridge_ts_train_features %>%
   mutate(

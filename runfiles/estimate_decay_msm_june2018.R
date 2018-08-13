@@ -2,6 +2,7 @@ library(tidyverse)
 library(skimr)
 library(ggridges)
 library(rstan)
+library(conflicted)
 
 # Load complete time series
 load("data/bridge_timeseries_june4.rdata")
@@ -9,8 +10,8 @@ load("data/bridge_timeseries_june4.rdata")
 set.seed(4242)
 
 bridgeIds <- unique(bridge_ts$bridgeID)
-bridge_sample_train <- sample(bridgeIds, size = 400, replace = F)
-bridge_sample_test <- sample(bridgeIds[(!(bridgeIds %in% bridge_sample_train))], size = 200, replace = F)
+bridge_sample_train <- sample(bridgeIds, size = 100, replace = F)
+bridge_sample_test <- sample(bridgeIds[(!(bridgeIds %in% bridge_sample_train))], size = 5, replace = F)
 intersect(bridge_sample_train,bridge_sample_test)
 
 
@@ -85,6 +86,7 @@ bridge_ts_train <- bridge_ts_train %>%
   ) %>%
   mutate(
     time_lag = lag(data_year, default = 1990),
+    time_lag = ifelse(time_lag == 1990 & data_year != 1991, data_year, time_lag),
     time_laps = data_year - time_lag,
     age = pmax(data_year - year_built_latest, 0)
   ) %>%
@@ -146,6 +148,7 @@ bridge_ts_test <- bridge_ts_test %>%
   ) %>%
   mutate(
     time_lag = lag(data_year, default = 1990),
+    time_lag = ifelse(time_lag == 1990 & data_year != 1991, data_year, time_lag),
     time_laps = data_year - time_lag,
     age = pmax(data_year - year_built_latest, 0)
   ) %>%
@@ -197,7 +200,7 @@ library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
-dgp_model <- stan_model("Models/msm_bridge_decay_v6_skinny.stan")
+dgp_model <- stan_model("Models/msm_bridge_decay_v8_skinny.stan")
 
 w <- 1e6 # for scaling spending
 
