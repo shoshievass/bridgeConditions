@@ -3,7 +3,7 @@ library(lubridate)
 library(readxl)
 
 
-bridge_spending_df_raw <- read_excel("data/tblBridgeSpending_full.xlsx")
+bridge_spending_df_raw <- read_excel("raw_data/tblBridgeSpending_full.xlsx")
 
 bridge_spending_df_raw <- bridge_spending_df_raw %>%
   mutate(
@@ -16,11 +16,11 @@ for(row in seq(nrow(bridge_spending_df_raw))){
   bridge_nos <- bridge_spending_df_raw$BridgeNumbers[row]
   bridge_nos_list <- unlist(strsplit(bridge_nos, ","))
   num_bridges_listed <- length(bridge_nos_list)
-  
+
   print(paste0("new bridge list: ", bridge_nos_list))
   print(paste0("Number of bridges listed: ", num_bridges_listed))
   print(paste0("there are now this many rows: ", nrow(bridge_spending_rows)))
-  
+
   bridge_spending_rows <- bridge_spending_rows %>%
     rbind(
       cbind(bridge_spending_df_raw[row,], bridgeID = bridge_nos_list, numBridgesFunded = num_bridges_listed)
