@@ -4,7 +4,7 @@ library(readxl)
 library(janitor)
 library(stringr)
 
-full_bridge_df_raw <- read_csv("data/tblNbiMaHistorical1.19.18.csv") %>% clean_names()
+full_bridge_df_raw <- read_csv("raw_data/tblNbiMaHistorical1.19.18.csv") %>% clean_names()
 load("data/bridge_spending_by_bridge_and_year.rdata") # loads spending dataframe w/ rows of bridgeNumbers split into one per row
 
 full_bridge_df_sm <- full_bridge_df_raw %>%
@@ -102,15 +102,15 @@ bridge_df_by_bridge_and_year <- bridge_df_by_bridge_and_year %>%
   ) %>%
   filter(num_obs > 1)
 
-## Test NAs - looks good! 
+## Test NAs - looks good!
 bridge_df_by_bridge_and_year %>% apply(2,function(x) sum(is.na(x)))
 
 
 # padded_bridge_times <- expand.grid(bridgeID = unique(bridge_df_by_bridge_and_year$bridgeID), data_year = unique(bridge_df_by_bridge_and_year$data_year))
 # bridge_timeseries_padded <- padded_bridge_times %>%
-#   left_join(bridge_df_by_bridge_and_year) %>% 
+#   left_join(bridge_df_by_bridge_and_year) %>%
 #   arrange(bridgeID, data_year)
- 
+
 bridge_ts <- bridge_df_by_bridge_and_year %>% ## Note: This no longer has every year represented
   left_join(bridge_spending_by_bridge_and_year, by=c("bridgeID","data_year")) %>%
   arrange(bridgeID, data_year)

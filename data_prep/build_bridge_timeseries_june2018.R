@@ -4,7 +4,7 @@ library(readxl)
 library(janitor)
 library(stringr)
 
-full_bridge_df_raw <- read_csv("data/tblNbiMaHistorical1.19.18.csv") %>% clean_names()
+full_bridge_df_raw <- read_csv("raw_data/tblNbiMaHistorical1.19.18.csv") %>% clean_names()
 load("data/bridge_spending_by_bridge_and_year.rdata") # loads spending dataframe w/ rows of bridgeNumbers split into one per row
 
 full_bridge_df_sm <- full_bridge_df_raw %>%
