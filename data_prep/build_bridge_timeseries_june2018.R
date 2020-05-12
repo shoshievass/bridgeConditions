@@ -1,3 +1,25 @@
+## ---------------------------
+##
+## Script name: Build Bridge Time Series, June 2018
+##
+## Purpose of script:
+##
+## Author: Shoshana Vasserman
+##
+## Date Created: June, 2018
+##
+## Revised by: Noah Jussila
+##
+## Dated Revised: May, 2020
+##
+## Email:
+##
+## Input: tblNbiMaHistorical1.19.18.csv
+##        bridge_spending_by_bridge_and_year.rdata
+##
+## Output: data/bridge_timeseries_june4.rdata
+##
+## ------------------------------
 library(tidyverse)
 library(lubridate)
 library(readxl)
@@ -5,7 +27,7 @@ library(janitor)
 library(stringr)
 
 full_bridge_df_raw <- read_csv("raw_data/tblNbiMaHistorical1.19.18.csv") %>% clean_names()
-load("data/bridge_spending_by_bridge_and_year.rdata") # loads spending dataframe w/ rows of bridgeNumbers split into one per row
+load("clean_data/bridge_spending_by_bridge_and_year.rdata") # loads spending dataframe w/ rows of bridgeNumbers split into one per row
 
 full_bridge_df_sm <- full_bridge_df_raw %>%
   select(
@@ -136,5 +158,5 @@ bridge_ts <- bridge_ts %>%
   )
 
 # write_csv(bridge_ts, "data/databridge_timeseries.csv", na = "NA", col_names = T)
-save(bridge_ts, file="data/bridge_timeseries_june4.rdata")
+save(bridge_ts, file="clean_data/bridge_timeseries_june4.rdata")
 

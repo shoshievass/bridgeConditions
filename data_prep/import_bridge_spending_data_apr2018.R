@@ -1,3 +1,26 @@
+## ---------------------------
+##
+## Script name: Import Bridge Spending Data, April 2018
+##
+## Purpose of script:
+##
+## Author: Shoshana Vasserman
+##
+## Date Created: April, 2018
+##
+## Revised by: Noah Jussila
+##
+## Dated Revised: May, 2020
+##
+## Email:
+##
+## Input: tblBridgeSpending_full.xlsx
+##
+## Output: bridge_spending_df.rdata
+##         bridge_spending_by_bridge_and_year.rdata
+##         bridge_spending_clean.csv
+##         bridge_spending_by_proj.csv
+## ------------------------------
 library(tidyverse)
 library(lubridate)
 library(readxl)
@@ -5,12 +28,15 @@ library(readxl)
 
 bridge_spending_df_raw <- read_excel("raw_data/tblBridgeSpending_full.xlsx")
 
+##Noah : Make missing values characters
 bridge_spending_df_raw <- bridge_spending_df_raw %>%
   mutate(
     BridgeNumbers = ifelse(is.na(BridgeNumbers), "NA", BridgeNumbers)
   )
 
 ## Need to process "bridge_spending_df" b/c BridgeNumbers often contains multiple BDEPT numbers
+
+##Noah : BridgeNumbers sometimes contain two numbers, but we want each row to correspond to one number
 bridge_spending_rows <- rbind()
 for(row in seq(nrow(bridge_spending_df_raw))){
   bridge_nos <- bridge_spending_df_raw$BridgeNumbers[row]
@@ -31,9 +57,10 @@ bridge_spending_df <- bridge_spending_df %>%
   mutate(
     spending_amt = Posting_Line_Amount / numBridgesFunded #average funding when multiple bridges are in the same obsevation
   )
-save(bridge_spending_df, file="data/bridge_spending_df.rdata")
+save(bridge_spending_df, file="clean_data/bridge_spending_df.rdata")
 rm(bridge_spending_rows)
 
+##Noah: Create data frame which includes total line and bridge spending for a given project and bridge
 bridge_spending_by_project_and_bridge <- bridge_spending_df %>%
   arrange(bridgeID,PROJECT_NO,projectYearStart) %>%
   group_by(PROJECT_NO, bridgeID) %>%
@@ -50,10 +77,10 @@ bridge_spending_by_project_and_bridge <- bridge_spending_df %>%
     ,end_year = last(projectYearEnd)
   )
 
-write.table(bridge_spending_df, file="data/bridge_spending_clean.csv", sep=",")
-write.table(bridge_spending_by_project_and_bridge, file="data/bridge_spending_by_proj.csv", sep=",")
+write.table(bridge_spending_df, file="clean_data/bridge_spending_clean.csv", sep=",")
+write.table(bridge_spending_by_project_and_bridge, file="clean_data/bridge_spending_by_proj.csv", sep=",")
 
-
+##Noah: Create data frame which includes total and average bridge spending for a given bridge in a year
 bridge_spending_by_bridge_and_year <- bridge_spending_by_project_and_bridge %>%
   arrange(bridgeID, start_year) %>%
   group_by(bridgeID,start_year) %>%
@@ -75,4 +102,4 @@ bridge_spending_by_bridge_and_year %>%
   ggplot(aes(x=factor(data_year), y=avg_bridge_spending)) +
   geom_col(aes(binwidth = 1))
 
-save(bridge_spending_by_bridge_and_year, file="data/bridge_spending_by_bridge_and_year.rdata")
+save(bridge_spending_by_bridge_and_year, file="clean_data/bridge_spending_by_bridge_and_year.rdata")

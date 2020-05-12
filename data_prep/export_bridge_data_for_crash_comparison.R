@@ -1,15 +1,35 @@
+## ---------------------------
+##
+## Script name: Export Bridge Data for Crash Comparison
+##
+## Purpose of script:
+##
+## Author: Shoshana Vasserman
+##
+## Date Created: May, 2018
+##
+## Revised by: Noah Jussila
+##
+## Dated Revised: May, 2020
+##
+## Email:
+##
+## Input: bridge_timeseries_merged_apr2018_wlats_longs.rdata
+##
+## Output: bridge_ts_for_crashdata.rdata
+## ------------------------------
 library(tidyverse)
 library(skimr)
 library(ggridges)
 
 
 # Load complete time series
-load("data/bridge_timeseries_merged_apr2018_wlats_longs.rdata")
+load("clean_data/bridge_timeseries_merged_apr2018_wlats_longs.rdata")
 
 # vectorStringConcat <- function(df, var){
 #   vec <= df[vec]
 #   out <- paste(vec, ",")
-#   
+#
 #   df <- df %>%
 #     mutate(
 #       agg
@@ -36,7 +56,7 @@ bridges <- bridge_ts %>%
     spending_in_year = ifelse(is.na(spending_in_year), 0, spending_in_year)
   )
 
-save(bridges, file="data/bridge_ts_for_crashdata.rdata")
+save(bridges, file="clean_data/bridge_ts_for_crashdata.rdata")
 
 
 # bridges <- bridges %>%
