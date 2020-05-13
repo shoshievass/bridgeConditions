@@ -2,7 +2,8 @@
 ##
 ## Script name: Import Bridge Spending Data, April 2018
 ##
-## Purpose of script:
+## Purpose of script: Create two data set which contain: bridge spending by
+##                    bridge, and bridge spending by project.
 ##
 ## Author: Shoshana Vasserman
 ##

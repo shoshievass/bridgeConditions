@@ -33,5 +33,6 @@ vignettes/*.pdf
 *.knit.md
 .Rproj.user
 
-# Data
-*.csv
+# Clean and Raw Data
+/raw_data/*
+/clean_data/*
