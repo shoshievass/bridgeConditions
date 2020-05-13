@@ -67,9 +67,9 @@ raw_data_list <- list(
   deck_health = sample(4:7, nrow(simulated_bridges), replace = T), # intialize randomly
   superstructure_health = sample(4:7, nrow(simulated_bridges), replace = T), # intialize randomly
   substructure_health = sample(4:7, nrow(simulated_bridges), replace = T), # intialize randomly
-  deck_health_change = rep(0, nrow(simulated_bridges)),
-  superstructure_health_change = rep(0, nrow(simulated_bridges)),
-  substructure_health_change = rep(0, nrow(simulated_bridges)),
+  last_observed_deck_index = c(-999,1:(nrow(simulated_bridges)-1)), ## no gaps here, so just previous index
+  last_observed_superstructure_index = c(-999,1:(nrow(simulated_bridges)-1)),
+  last_observed_substructure_index = c(-999,1:(nrow(simulated_bridges)-1)),
   spending = (simulated_bridges$spending / w),
   num_periods_since_spending = simulated_bridges$periods_since_spending,
   # work_done = simulated_bridges$work_done,
@@ -115,6 +115,9 @@ simulated_data_list <- list(
   deck_health = as.vector(dgp_sim_deck_health),
   superstructure_health = as.vector(dgp_sim_superstructure_health),
   substructure_health = as.vector(dgp_sim_substructure_health),
+  last_observed_deck_index = c(-999,1:(nrow(simulated_bridges)-1)), ## no gaps here, so just previous index
+  last_observed_superstructure_index = c(-999,1:(nrow(simulated_bridges)-1)),
+  last_observed_substructure_index = c(-999,1:(nrow(simulated_bridges)-1)),
   spending = (simulated_bridges$spending / w),
   num_periods_since_spending = simulated_bridges$periods_since_spending,
   work_done = simulated_bridges$work_done,

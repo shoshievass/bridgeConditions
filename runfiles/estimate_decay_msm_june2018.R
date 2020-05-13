@@ -4,6 +4,9 @@ library(ggridges)
 library(rstan)
 library(conflicted)
 
+conflict_prefer("filter", "dplyr")
+conflict_prefer("lag", "dplyr")
+
 # Load complete time series
 load("data/bridge_timeseries_june4.rdata")
 
@@ -66,7 +69,7 @@ bridge_ts_features <- bridge_ts_features %>%
 X_full <- model.matrix(~ . - 1 - bridgeID, data = bridge_ts_features)
 X_full <- scale(X_full)
 
-X_full_aug <- as.tibble(X_full) %>%
+X_full_aug <- as_tibble(X_full) %>%
   mutate(
     bridgeID = bridge_ts_features$bridgeID
   )
@@ -74,9 +77,9 @@ X_full_aug <- as.tibble(X_full) %>%
 ##### Select training data #######
 
 bridge_ts_train <- bridge_ts %>%
-  filter(bridgeID %in% bridge_sample_train)
+  dplyr::filter(bridgeID %in% bridge_sample_train)
 
-X_train <- as.matrix(X_full_aug %>% filter(bridgeID %in% bridge_sample_train) %>% select(-bridgeID))
+X_train <- as.matrix(X_full_aug %>% dplyr::filter(bridgeID %in% bridge_sample_train) %>% select(-bridgeID))
 
 bridge_ts_train <- bridge_ts_train %>%
   ungroup() %>%
@@ -85,7 +88,7 @@ bridge_ts_train <- bridge_ts_train %>%
     bridgeID
   ) %>%
   mutate(
-    time_lag = lag(data_year, default = 1990),
+    time_lag = dplyr::lag(data_year, default = 1990),
     time_lag = ifelse(time_lag == 1990 & data_year != 1991, data_year, time_lag),
     time_laps = data_year - time_lag,
     age = pmax(data_year - year_built_latest, 0)
@@ -99,9 +102,9 @@ bridge_ts_train <- bridge_ts_train %>%
   ) %>%
   group_by(bridgeID) %>%
   mutate(
-    deck_nm_rn_lag = lag(deck_nm_rn, na.rm = T),
-    superstructure_nm_rn_lag = lag(superstructure_nm_rn, na.rm = T),
-    substructure_nm_rn_lag = lag(substructure_nm_rn, na.rm = T)
+    deck_nm_rn_lag = dplyr::lag(deck_nm_rn, na.rm = T),
+    superstructure_nm_rn_lag = dplyr::lag(superstructure_nm_rn, na.rm = T),
+    substructure_nm_rn_lag = dplyr::lag(substructure_nm_rn, na.rm = T)
   ) %>%
   mutate(
     deck_nm_rn_lag = zoo::na.locf(deck_nm_rn_lag, na.rm = F),
@@ -136,9 +139,9 @@ bridge_ts_train <- bridge_ts_train %>%
 
 ##### Select test data #######
 bridge_ts_test <- bridge_ts %>%
-  filter(bridgeID %in% bridge_sample_test)
+  dplyr::filter(bridgeID %in% bridge_sample_test)
 
-X_test <- as.matrix(X_full_aug %>% filter(bridgeID %in% bridge_sample_test) %>% select(-bridgeID))
+X_test <- as.matrix(X_full_aug %>% dplyr::filter(bridgeID %in% bridge_sample_test) %>% select(-bridgeID))
 
 bridge_ts_test <- bridge_ts_test %>%
   ungroup() %>%
@@ -147,7 +150,7 @@ bridge_ts_test <- bridge_ts_test %>%
     bridgeID
   ) %>%
   mutate(
-    time_lag = lag(data_year, default = 1990),
+    time_lag = dplyr::lag(data_year, default = 1990),
     time_lag = ifelse(time_lag == 1990 & data_year != 1991, data_year, time_lag),
     time_laps = data_year - time_lag,
     age = pmax(data_year - year_built_latest, 0)
@@ -161,9 +164,9 @@ bridge_ts_test <- bridge_ts_test %>%
   ) %>%
   group_by(bridgeID) %>%
   mutate(
-    deck_nm_rn_lag = lag(deck_nm_rn, na.rm = T),
-    superstructure_nm_rn_lag = lag(superstructure_nm_rn, na.rm = T),
-    substructure_nm_rn_lag = lag(substructure_nm_rn, na.rm = T)
+    deck_nm_rn_lag = dplyr::lag(deck_nm_rn, na.rm = T),
+    superstructure_nm_rn_lag = dplyr::lag(superstructure_nm_rn, na.rm = T),
+    substructure_nm_rn_lag = dplyr::lag(substructure_nm_rn, na.rm = T)
   ) %>%
   mutate(
     deck_nm_rn_lag = zoo::na.locf(deck_nm_rn_lag, na.rm = F),
@@ -199,6 +202,9 @@ bridge_ts_test <- bridge_ts_test %>%
 library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
+
+conflict_prefer("extract", "rstan")
+conflict_prefer("Position", "ggplot2")
 
 dgp_model <- stan_model("Models/msm_bridge_decay_v8_skinny.stan")
 

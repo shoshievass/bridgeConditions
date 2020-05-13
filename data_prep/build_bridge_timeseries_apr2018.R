@@ -1,11 +1,35 @@
+## ---------------------------
+##
+## Script name: Build Bridge Time Series, April 2018
+##
+## Purpose of script:
+##
+## Author: Shoshana Vasserman
+##
+## Date Created: April, 2018
+##
+## Revised by: Noah Jussila
+##
+## Dated Revised: May, 2020
+##
+## Email:
+##
+## Input: tblNbiMaHistorical1.19.18.csv
+##        bridge_spending_by_bridge_and_year.rdata
+##
+## Output: databridge_timeseries.csv
+##         bridge_timeseries_merged_apr2018_wlats_longs.rdata
+##         bridge_timeseries_merged_apr2018.rdata
+## ------------------------------
+
 library(tidyverse)
 library(lubridate)
 library(readxl)
 library(janitor)
 library(stringr)
 
-full_bridge_df_raw <- read_csv("data/tblNbiMaHistorical1.19.18.csv") %>% clean_names()
-load("data/bridge_spending_by_bridge_and_year.rdata") # loads spending dataframe w/ rows of bridgeNumbers split into one per row
+full_bridge_df_raw <- read_csv("raw_data/tblNbiMaHistorical1.19.18.csv") %>% clean_names()
+load("clean_data/bridge_spending_by_bridge_and_year.rdata") # loads spending dataframe w/ rows of bridgeNumbers split into one per row
 
 full_bridge_df_sm <- full_bridge_df_raw %>%
   select(
@@ -102,15 +126,15 @@ bridge_df_by_bridge_and_year <- bridge_df_by_bridge_and_year %>%
   ) %>%
   filter(num_obs > 1)
 
-## Test NAs - looks good! 
+## Test NAs - looks good!
 bridge_df_by_bridge_and_year %>% apply(2,function(x) sum(is.na(x)))
 
 
 # padded_bridge_times <- expand.grid(bridgeID = unique(bridge_df_by_bridge_and_year$bridgeID), data_year = unique(bridge_df_by_bridge_and_year$data_year))
 # bridge_timeseries_padded <- padded_bridge_times %>%
-#   left_join(bridge_df_by_bridge_and_year) %>% 
+#   left_join(bridge_df_by_bridge_and_year) %>%
 #   arrange(bridgeID, data_year)
- 
+
 bridge_ts <- bridge_df_by_bridge_and_year %>% ## Note: This no longer has every year represented
   left_join(bridge_spending_by_bridge_and_year, by=c("bridgeID","data_year")) %>%
   arrange(bridgeID, data_year)
@@ -124,9 +148,9 @@ bridge_ts <- bridge_ts %>%
     project_init_year = ifelse(spending > 0, first_start_year, NA)
   )
 
-write_csv(bridge_ts, "data/databridge_timeseries.csv", na = "NA", col_names = T)
-save(bridge_ts, file="data/bridge_timeseries_merged_apr2018_wlats_longs.rdata")
+write_csv(bridge_ts, "clean_data/databridge_timeseries.csv", na = "NA", col_names = T)
+save(bridge_ts, file="clean_data/bridge_timeseries_merged_apr2018_wlats_longs.rdata")
 
 bridge_ts <- bridge_ts %>%
   select(-lat_016, -long_017)
-save(bridge_ts, file="data/bridge_timeseries_merged_apr2018.rdata")
+save(bridge_ts, file="clean_data/bridge_timeseries_merged_apr2018.rdata")

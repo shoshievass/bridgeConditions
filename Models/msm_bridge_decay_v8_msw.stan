@@ -241,7 +241,7 @@ model {
   int temp_lag_superstructure_index;
   int temp_lag_substructure_index;
 
-  matrix[N, M+2] X_aug;
+  matrix[N, M+1] X_aug;
 
   discount_scalar ~ normal(0,1);
 
@@ -256,6 +256,9 @@ model {
 
   }
 
+  // print("X dims", dims(X));
+  // print("discounted_spending dims", dims(discounted_spending));
+  // print("X_aug dims", dims(X_aug));
   X_aug = append_col(discounted_spending, X);
 
   for(b in 1:B){
