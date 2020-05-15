@@ -102,11 +102,15 @@ interpolateMissingValsWLastSeen <- function(vec){
   return(out)
 }
 
+missing1 <- full_bridge_df_sm[!complete.cases(full_bridge_df_sm),]
+
 bridge_df_by_bridge_and_year <- full_bridge_df_sm %>%
   group_by(bridgeID, data_year) %>%
   summarize_all(funs(getMaxAdjusted(.))) %>%
   arrange(bridgeID, data_year) %>%
   ungroup()
+
+missing2 <- bridge_df_by_bridge_and_year[!complete.cases(bridge_df_by_bridge_and_year),]
 
 bridge_df_by_bridge_and_year <- bridge_df_by_bridge_and_year %>%
   arrange(bridgeID, data_year) %>%
@@ -125,6 +129,8 @@ bridge_df_by_bridge_and_year <- bridge_df_by_bridge_and_year %>%
     substructure = ifelse(substructure == 0 | is.na(substructure), -999, substructure)
   ) %>%
   filter(num_obs > 1)
+
+missing3 <- bridge_df_by_bridge_and_year[!complete.cases(bridge_df_by_bridge_and_year),]
 
 ## Test NAs - looks good!
 bridge_df_by_bridge_and_year %>% apply(2,function(x) sum(is.na(x)))

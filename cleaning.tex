@@ -6,7 +6,6 @@
 \usepackage{graphicx}
 \usepackage{tikz}
 \usepackage[margin=1in]{geometry}
-\author{Noah Jussila}
 \title{Bridge Project Cleaning Documentation}
 \begin{document}
 \maketitle
@@ -43,9 +42,9 @@
 %Rounded Rect [id:dp5669144322763333] 
 \draw  [fill={rgb, 255:red, 255; green, 255; blue, 255 }  ,fill opacity=1 ] (79.83,197.53) .. controls (79.83,194.48) and (82.31,192) .. (85.37,192) -- (275.3,192) .. controls (278.36,192) and (280.83,194.48) .. (280.83,197.53) -- (280.83,214.13) .. controls (280.83,217.19) and (278.36,219.67) .. (275.3,219.67) -- (85.37,219.67) .. controls (82.31,219.67) and (79.83,217.19) .. (79.83,214.13) -- cycle ;
 %Rounded Rect [id:dp7084920372414294] 
-\draw  [fill={rgb, 255:red, 255; green, 255; blue, 255 }  ,fill opacity=1 ] (79.83,252.87) .. controls (79.83,249.81) and (82.31,247.33) .. (85.37,247.33) -- (189.3,247.33) .. controls (192.36,247.33) and (194.83,249.81) .. (194.83,252.87) -- (194.83,269.47) .. controls (194.83,272.52) and (192.36,275) .. (189.3,275) -- (85.37,275) .. controls (82.31,275) and (79.83,272.52) .. (79.83,269.47) -- cycle ;
+
 %Rounded Rect [id:dp33954491738600545] 
-\draw  [fill={rgb, 255:red, 255; green, 255; blue, 255 }  ,fill opacity=1 ] (79.83,225.2) .. controls (79.83,222.14) and (82.31,219.67) .. (85.37,219.67) -- (177.3,219.67) .. controls (180.36,219.67) and (182.83,222.14) .. (182.83,225.2) -- (182.83,241.8) .. controls (182.83,244.86) and (180.36,247.33) .. (177.3,247.33) -- (85.37,247.33) .. controls (82.31,247.33) and (79.83,244.86) .. (79.83,241.8) -- cycle ;
+
 %Rounded Rect [id:dp6156154944564061] 
 \draw  [fill={rgb, 255:red, 255; green, 255; blue, 255 }  ,fill opacity=1 ] (315.83,171.87) .. controls (315.83,168.81) and (318.31,166.33) .. (321.37,166.33) -- (447.3,166.33) .. controls (450.36,166.33) and (452.83,168.81) .. (452.83,171.87) -- (452.83,188.47) .. controls (452.83,191.52) and (450.36,194) .. (447.3,194) -- (321.37,194) .. controls (318.31,194) and (315.83,191.52) .. (315.83,188.47) -- cycle ;
 %Rounded Rect [id:dp9023582623722428] 
@@ -55,15 +54,15 @@
 %Rounded Rect [id:dp9410694337910341] 
 \draw  [fill={rgb, 255:red, 255; green, 255; blue, 255 }  ,fill opacity=1 ] (315.83,254.87) .. controls (315.83,251.81) and (318.31,249.33) .. (321.37,249.33) -- (464.3,249.33) .. controls (467.36,249.33) and (469.83,251.81) .. (469.83,254.87) -- (469.83,271.47) .. controls (469.83,274.52) and (467.36,277) .. (464.3,277) -- (321.37,277) .. controls (318.31,277) and (315.83,274.52) .. (315.83,271.47) -- cycle ;
 %Straight Lines [id:da30901238103944073] 
-\draw    (61.83,156.33) -- (60.83,252.87) ;
+\draw    (61.83,156.33) -- (60.83,197.53) ;
 %Straight Lines [id:da07003316170157703] 
 \draw    (60.83,169.87) -- (79.83,169.87) ;
 %Straight Lines [id:da1603456728777688] 
 \draw    (60.83,197.53) -- (79.83,197.53) ;
 %Straight Lines [id:da6394843348079655] 
-\draw    (60.83,225.2) -- (79.83,225.2) ;
+
 %Straight Lines [id:da7981296144875458] 
-\draw    (60.83,252.87) -- (79.83,252.87) ;
+
 %Straight Lines [id:da6786750525665359] 
 \draw    (297.83,162.33) -- (296.83,254.87) ;
 %Straight Lines [id:da18131164913333353] 
@@ -114,13 +113,9 @@
 \draw    (487.43,363.87) -- (506.43,363.87) ;
 
 % Text Node
-\draw (91,177) node [anchor=north west][inner sep=0.75pt]  [font=\tiny] [align=left] {pamac\_bridge\_conditions\_jan2018.csv};
+\draw (91,177) node [anchor=north west][inner sep=0.75pt]  [font=\tiny] [align=left] {tblBridgeSpending\_full.xlsx};
 % Text Node
-\draw (86,204) node [anchor=north west][inner sep=0.75pt]  [font=\tiny] [align=left] {tblBridgeArchiveStudySetFinal9.21.17\_historicalNBI.csv};
-% Text Node
-\draw (86,231) node [anchor=north west][inner sep=0.75pt]  [font=\tiny] [align=left] {tblBridgeSpending\_full.xlsx};
-% Text Node
-\draw (86,259) node [anchor=north west][inner sep=0.75pt]  [font=\tiny] [align=left] {tblNbiMaHistorical1.19.18.csv};
+\draw (86,204) node [anchor=north west][inner sep=0.75pt]  [font=\tiny] [align=left] {tblNbiMaHistorical1.19.18.csv};
 % Text Node
 \draw (31,130) node [anchor=north west][inner sep=0.75pt]   [align=left] {raw\_data};
 % Text Node
@@ -162,6 +157,40 @@
 \end{center}
 
 \section{Raw Data}
+We have two raw data files pertaining to bridges in projects in the \texttt{raw\_data} folder that will be used to create our intended data sets.
+\begin{itemize}
+	\item The spending associated with bridge related projects are recorded in \texttt{tblBridgeSpending\_full.xlsx}. Each observation corresponds to a line item for a single project, meaning that a given project has several observations associated with it. Furthermore, it is common for a project to include multiple bridges, resulting in the \texttt{BridgeNumbers} variable taking on a set of identifying numbers associated with bridges, instead of a single value. The key variable in this data set is \texttt{Posting\_Line\_Amount}, as it will allow us to determine spending for a single bridge in some time period. 
+	\item The conditions associated with bridges over time are found in \texttt{tblNbiMaHistorical1.19.18.csv}. Each observation corresponds to the health of a bridge in a given year from 1991 to 2016. The majority of variable correspond to specific characterstics of the bridge (location, size, year of construction, etc.), but there exists key variables which record the condition of parts of the bridge on a scale from one to nine (one being the worst possible condition, and nine being the best). In particular, the condition of the following parts are recorded: deck, superstructure, substructure, channel, and culvert.\footnote{A bridge does not necessarily posses each of these parts.}  
+
+\end{itemize} 
 \section{Code}
-\section{Clean Data}
+The code used to clean and manipulate the raw data aims to make two pieces of information clear and accessible for analysis: the health of a bridge, and the resources allocated towards maintaining a bridge. The goal is to assemble a data set where each observation is a bridge in a given year, with variables corresponding to the condition of, and spending used towards, that bridge in the year.  The four scripts used for cleaning are found in \texttt{data\_prep} and are intended to run in the following order:
+\begin{enumerate}
+	\item \texttt{import\_bridge\_spending\_data\_apr2018.R}
+	\item  \texttt{build\_bridge\_timeseries\_june2018.R} 
+\end{enumerate}  
+
+Our first step is creating a data set which contains spending information for each bridge. This is executed with \texttt{import\_bridge\_spending\_data\_apr2018.R}, which manipulates 
+the data presented in \texttt{tblBridgeSpending\_full.xlsx}. As previously noted, each observation in this table corresponds to a line item for a project, many of which include multiple bridges. We want each observation to correspond to a line item of a bridge. To be explicit we may have a single observation such as: 
+\begin{center}
+\begin{tabular}{ccccc}
+	PROJECT\_NO & \ldots &Posting\_Line\_Amount & \ldots & BridgeNumbers \\ \hline
+	100000      & \ldots & 100               & \ldots     & B1, B2       
+\end{tabular},
+\end{center}
+opposed to observations corresponding to each bridge: 
+\begin{center}
+	\begin{tabular}{ccccc}
+		PROJECT\_NO & \ldots &Posting\_Line\_Amount & \ldots & BridgeNumbers \\ \hline
+		100000      & \ldots & 50               & \ldots     & B1    \\   100000      & \ldots & 50               & \ldots     & B2
+	\end{tabular}.
+\end{center}
+Note that in this particular situation, it is not clear how much money is spent on a line item for B1 versus B2. We assume that the amount allocated to each bridge is simply the average line amount for the bridges in a given project line item. We loop over each row in the original data frame to ``uncouple'' bridges in this way, resulting in approximately 17,000 additional observations. The resulting data frame is saved as \texttt{bridge\_spending\_df.rdata}, and in CSV form as \texttt{bridge\_spending\_clean.csv}. Finally, we use \texttt{summarize()} and \texttt{group()} to create a data frame with spending data for each \textit{realized} bridge-project pair, and another with spending data for each \textit{realized} bridge-year pair.\footnote{Emphasis is put on realized here, as we do not record bridge-project or bridge-year pairs that do not occur. If we were to do this, then the overwhelming majority of observations would have missing values, as no single project includes every bridge, and no bridge is repaired each year. In our final time series dataset, this pattern is actually realized, and we will see that most of the spending data is missing. An alternate approach is to record each of these missing values as zero, but that implies maintenance was conducted, it just was done at no cost.} We save these data frames as \texttt{bridge\_spending\_by\_proj.csv} and \texttt{bridge\_spending\_by\_bridge\_and\_year.rdata} respectively.
+
+The next script, titled \texttt{build\_bridge\_timeseries\_june2018.R}  , is responsible for creating the main time series data set that will be used in our analysis. Not only will these script combine the spending data now presented in \texttt{bridge\_spending\_by\_bridge\_and\_year.rdata} with the bridge condition data in \texttt{tblNbiMaHistorical1.19.18.csv}, but it will also reshape the data such that each observation corresponds to a bridge in a given year. \\
+%drop any bridge-years were there was no inspection
+
+%first function -- ????
+
+%second function -- interpolate values with last observed 
 \end{document}
