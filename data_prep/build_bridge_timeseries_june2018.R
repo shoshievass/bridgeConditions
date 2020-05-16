@@ -2,7 +2,7 @@
 ##
 ## Script name: Build Bridge Time Series, June 2018
 ##
-## Purpose of script:
+## Purpose of script: Create time series data for analysis
 ##
 ## Author: Shoshana Vasserman
 ##
@@ -95,6 +95,34 @@ full_bridge_df_sm <- full_bridge_df_raw %>%
   filter( no_inspection == 0) %>%
   select(-no_inspection)
 
+#######################################################
+#COLLAPSE DATA SO EACH OBSERVATION IS ONE BRIDGE-YEAR
+#######################################################
+
+#Multiple observations can correspond to the same bridge-year
+full_bridge_df_sm %>%
+  group_by(bridgeID, data_year) %>%
+  add_tally %>%
+  filter(n>1)
+
+#We want to collapse the data s.t each bridge-year is represented by a single observation
+#How do we determine the value taken on by each variable -- take the max!
+getMaxAdjusted <- function(vec){
+  out = suppressWarnings( max(vec, na.rm=T) )
+  if(is.infinite(out)){
+    return(NA)
+  }
+  else{
+    return(out)
+  }
+}
+
+bridge_df_by_bridge_and_year <- full_bridge_df_sm %>%
+  group_by(bridgeID, data_year) %>%
+  summarize_all(funs(getMaxAdjusted(.))) %>%
+  arrange(bridgeID, data_year) %>%
+  ungroup()
+
 #######################################
 #GET RID OF MISSING VALUES SO MODEL RUNS
 #######################################
@@ -107,32 +135,11 @@ checkNAs <- function(df){
 #How many missing values do we initially have?
 checkNAs(full_bridge_df_sm)
 
-
-getMaxAdjusted <- function(vec){
-  out = suppressWarnings( max(vec, na.rm=T) )
-  if(is.infinite(out)){
-    return(NA)
-  }
-  else{
-    return(out)
-  }
-}
-
 interpolateMissingValsWLastSeen <- function(vec){
   if(is.na(vec[1])){vec[1] = vec[2]}
   out <- zoo::na.locf(vec, na.rm = FALSE)
   return(out)
 }
-
-
-bridge_df_by_bridge_and_year <- full_bridge_df_sm %>%
-  group_by(bridgeID, data_year) %>%
-  summarize_all(funs(getMaxAdjusted(.))) %>%
-  arrange(bridgeID, data_year) %>%
-  ungroup()
-
-checkNAs(bridge_df_by_bridge_and_year)
-
 
 bridge_df_by_bridge_and_year <- bridge_df_by_bridge_and_year %>%
   arrange(bridgeID, data_year) %>%
