@@ -119,7 +119,7 @@ getMaxAdjusted <- function(vec){
 
 bridge_df_by_bridge_and_year <- full_bridge_df_sm %>%
   group_by(bridgeID, data_year) %>%
-  summarize_all(funs(getMaxAdjusted(.))) %>%
+  summarize_all(list(~getMaxAdjusted(.))) %>%
   arrange(bridgeID, data_year) %>%
   ungroup()
 
@@ -144,7 +144,8 @@ interpolateMissingValsWLastSeen <- function(vec){
 bridge_df_by_bridge_and_year <- bridge_df_by_bridge_and_year %>%
   arrange(bridgeID, data_year) %>%
   ungroup() %>%
-  mutate_at(vars(-deck,-superstructure,-substructure),funs(interpolateMissingValsWLastSeen(.))) %>%
+  mutate_at(vars(-deck,-superstructure,-substructure),list(~interpolateMissingValsWLastSeen(.))) %>%
+  group_by(bridgeID) %>%
   mutate(
     num_obs = n(),
     percent_adt_truck_109 = ifelse(is.na(percent_adt_truck_109), max(percent_adt_truck_109, na.rm = T), percent_adt_truck_109), ## fill in missing gaps w/ overall max
@@ -166,11 +167,11 @@ checkNAs(bridge_df_by_bridge_and_year)
 #######################################
 
 
-bridge_ts <- bridge_df_by_bridge_and_year %>% ## Note: This no longer has every year represented
+bridge_ts2 <- bridge_df_by_bridge_and_year %>% ## Note: This no longer has every year represented
   left_join(bridge_spending_by_bridge_and_year, by=c("bridgeID","data_year")) %>%
   arrange(bridgeID, data_year)
 
-bridge_ts <- bridge_ts %>%
+bridge_ts2 <- bridge_ts2 %>%
   arrange(bridgeID, data_year) %>%
   mutate(
     spending = ifelse(is.na(total_bridge_spending), 0, total_bridge_spending ),
@@ -179,6 +180,6 @@ bridge_ts <- bridge_ts %>%
     project_init_year = ifelse(spending > 0, first_start_year, NA)
   )
 
-# write_csv(bridge_ts, "data/databridge_timeseries.csv", na = "NA", col_names = T)
+write_csv(bridge_ts, "data/databridge_timeseries.csv", na = "NA", col_names = T)
 save(bridge_ts, file="clean_data/bridge_timeseries_june4.rdata")
 

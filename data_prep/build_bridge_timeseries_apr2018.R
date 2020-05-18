@@ -102,21 +102,17 @@ interpolateMissingValsWLastSeen <- function(vec){
   return(out)
 }
 
-missing1 <- full_bridge_df_sm[!complete.cases(full_bridge_df_sm),]
-
 bridge_df_by_bridge_and_year <- full_bridge_df_sm %>%
   group_by(bridgeID, data_year) %>%
   summarize_all(funs(getMaxAdjusted(.))) %>%
   arrange(bridgeID, data_year) %>%
   ungroup()
 
-missing2 <- bridge_df_by_bridge_and_year[!complete.cases(bridge_df_by_bridge_and_year),]
-
 bridge_df_by_bridge_and_year <- bridge_df_by_bridge_and_year %>%
   arrange(bridgeID, data_year) %>%
   ungroup() %>%
-  group_by(bridgeID) %>%
   mutate_at(vars(-deck,-superstructure,-substructure),funs(interpolateMissingValsWLastSeen(.))) %>%
+  group_by(bridgeID) %>%
   mutate(
     num_obs = n(),
     percent_adt_truck_109 = ifelse(is.na(percent_adt_truck_109), max(percent_adt_truck_109, na.rm = T), percent_adt_truck_109), ## fill in missing gaps w/ overall max
@@ -129,8 +125,6 @@ bridge_df_by_bridge_and_year <- bridge_df_by_bridge_and_year %>%
     substructure = ifelse(substructure == 0 | is.na(substructure), -999, substructure)
   ) %>%
   filter(num_obs > 1)
-
-missing3 <- bridge_df_by_bridge_and_year[!complete.cases(bridge_df_by_bridge_and_year),]
 
 ## Test NAs - looks good!
 bridge_df_by_bridge_and_year %>% apply(2,function(x) sum(is.na(x)))
@@ -154,7 +148,7 @@ bridge_ts <- bridge_ts %>%
     project_init_year = ifelse(spending > 0, first_start_year, NA)
   )
 
-write_csv(bridge_ts, "clean_data/databridge_timeseries.csv", na = "NA", col_names = T)
+#write_csv(bridge_ts, "clean_data/databridge_timeseries.csv", na = "NA", col_names = T)
 save(bridge_ts, file="clean_data/bridge_timeseries_merged_apr2018_wlats_longs.rdata")
 
 bridge_ts <- bridge_ts %>%
