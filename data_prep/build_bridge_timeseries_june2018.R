@@ -26,6 +26,10 @@ library(readxl)
 library(janitor)
 library(stringr)
 
+#####################
+#PRELIMINARY CLEANING
+#####################
+
 full_bridge_df_raw <- read_csv("raw_data/tblNbiMaHistorical1.19.18.csv") %>% clean_names()
 load("clean_data/bridge_spending_by_bridge_and_year.rdata") # loads spending dataframe w/ rows of bridgeNumbers split into one per row
 
@@ -95,9 +99,9 @@ full_bridge_df_sm <- full_bridge_df_raw %>%
   filter( no_inspection == 0) %>%
   select(-no_inspection)
 
-#######################################################
+#####################################################
 #COLLAPSE DATA SO EACH OBSERVATION IS ONE BRIDGE-YEAR
-#######################################################
+#####################################################
 
 #Multiple observations can correspond to the same bridge-year
 full_bridge_df_sm %>%
@@ -123,9 +127,9 @@ bridge_df_by_bridge_and_year <- full_bridge_df_sm %>%
   arrange(bridgeID, data_year) %>%
   ungroup()
 
-#######################################
-#GET RID OF MISSING VALUES SO MODEL RUNS
-#######################################
+##############################################################
+#GET RID OF MISSING VALUES BY REPLACING NAs WITH LAST OBSERVED
+##############################################################
 
 #Function used to count missing values
 checkNAs <- function(df){
@@ -162,9 +166,9 @@ bridge_df_by_bridge_and_year <- bridge_df_by_bridge_and_year %>%
 ## Verify that we got rid of all the missing values
 checkNAs(bridge_df_by_bridge_and_year)
 
-#######################################
+#########################
 #MERGE WITH SPENDING DATA
-#######################################
+#########################
 
 
 bridge_ts2 <- bridge_df_by_bridge_and_year %>% ## Note: This no longer has every year represented
@@ -179,6 +183,10 @@ bridge_ts2 <- bridge_ts2 %>%
     project_end_year = ifelse(spending > 0, last_end_year, NA),
     project_init_year = ifelse(spending > 0, first_start_year, NA)
   )
+
+###########
+#SAVE FILES
+###########
 
 write_csv(bridge_ts, "data/databridge_timeseries.csv", na = "NA", col_names = T)
 save(bridge_ts, file="clean_data/bridge_timeseries_june4.rdata")

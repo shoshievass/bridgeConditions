@@ -2,7 +2,7 @@
 ##
 ## Script name: Build Bridge Time Series, April 2018
 ##
-## Purpose of script:
+## Purpose of script: Create time series data for analysis
 ##
 ## Author: Shoshana Vasserman
 ##
@@ -27,6 +27,10 @@ library(lubridate)
 library(readxl)
 library(janitor)
 library(stringr)
+
+#####################
+#PRELIMINARY CLEANING
+#####################
 
 full_bridge_df_raw <- read_csv("raw_data/tblNbiMaHistorical1.19.18.csv") %>% clean_names()
 load("clean_data/bridge_spending_by_bridge_and_year.rdata") # loads spending dataframe w/ rows of bridgeNumbers split into one per row
@@ -86,6 +90,11 @@ full_bridge_df_sm <- full_bridge_df_raw %>%
   select(-year_built_027, -year_reconstructed_106) %>%
   filter( no_inspection == 0)
 
+
+#####################################################
+#COLLAPSE DATA SO EACH OBSERVATION IS ONE BRIDGE-YEAR
+#####################################################
+
 getMaxAdjusted <- function(vec){
   out = suppressWarnings( max(vec, na.rm=T) )
   if(is.infinite(out)){
@@ -96,17 +105,23 @@ getMaxAdjusted <- function(vec){
   }
 }
 
+bridge_df_by_bridge_and_year <- full_bridge_df_sm %>%
+  group_by(bridgeID, data_year) %>%
+  summarize_all(funs(getMaxAdjusted(.))) %>%
+  arrange(bridgeID, data_year) %>%
+  ungroup()
+
+##############################################################
+#GET RID OF MISSING VALUES BY REPLACING NAs WITH LAST OBSERVED
+##############################################################
+
 interpolateMissingValsWLastSeen <- function(vec){
   if(is.na(vec[1])){vec[1] = vec[2]}
   out <- zoo::na.locf(vec, na.rm = FALSE)
   return(out)
 }
 
-bridge_df_by_bridge_and_year <- full_bridge_df_sm %>%
-  group_by(bridgeID, data_year) %>%
-  summarize_all(funs(getMaxAdjusted(.))) %>%
-  arrange(bridgeID, data_year) %>%
-  ungroup()
+
 
 bridge_df_by_bridge_and_year <- bridge_df_by_bridge_and_year %>%
   arrange(bridgeID, data_year) %>%
@@ -130,10 +145,9 @@ bridge_df_by_bridge_and_year <- bridge_df_by_bridge_and_year %>%
 bridge_df_by_bridge_and_year %>% apply(2,function(x) sum(is.na(x)))
 
 
-# padded_bridge_times <- expand.grid(bridgeID = unique(bridge_df_by_bridge_and_year$bridgeID), data_year = unique(bridge_df_by_bridge_and_year$data_year))
-# bridge_timeseries_padded <- padded_bridge_times %>%
-#   left_join(bridge_df_by_bridge_and_year) %>%
-#   arrange(bridgeID, data_year)
+#########################
+#MERGE WITH SPENDING DATA
+#########################
 
 bridge_ts <- bridge_df_by_bridge_and_year %>% ## Note: This no longer has every year represented
   left_join(bridge_spending_by_bridge_and_year, by=c("bridgeID","data_year")) %>%
@@ -148,7 +162,10 @@ bridge_ts <- bridge_ts %>%
     project_init_year = ifelse(spending > 0, first_start_year, NA)
   )
 
-#write_csv(bridge_ts, "clean_data/databridge_timeseries.csv", na = "NA", col_names = T)
+###########
+#SAVE FILES
+###########
+
 save(bridge_ts, file="clean_data/bridge_timeseries_merged_apr2018_wlats_longs.rdata")
 
 bridge_ts <- bridge_ts %>%
