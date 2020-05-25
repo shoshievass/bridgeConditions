@@ -26,6 +26,9 @@ library(tidyverse)
 library(lubridate)
 library(readxl)
 
+#####################
+#PRELIMINARY CLEANING
+#####################
 
 bridge_spending_df_raw <- read_excel("raw_data/tblBridgeSpending_full.xlsx")
 
@@ -35,9 +38,10 @@ bridge_spending_df_raw <- bridge_spending_df_raw %>%
     BridgeNumbers = ifelse(is.na(BridgeNumbers), "NA", BridgeNumbers)
   )
 
-## Need to process "bridge_spending_df" b/c BridgeNumbers often contains multiple BDEPT numbers
+###########################################################
+#SEPERATE OBSERVATIONS WHICH CORRESPOND TO MULTIPLE BRIDGES
+###########################################################
 
-##Noah : BridgeNumbers sometimes contain two numbers, but we want each row to correspond to one number
 bridge_spending_rows <- rbind()
 for(row in seq(nrow(bridge_spending_df_raw))){
   bridge_nos <- bridge_spending_df_raw$BridgeNumbers[row]
@@ -61,7 +65,10 @@ bridge_spending_df <- bridge_spending_df %>%
 save(bridge_spending_df, file="clean_data/bridge_spending_df.rdata")
 rm(bridge_spending_rows)
 
-##Noah: Create data frame which includes total line and bridge spending for a given project and bridge
+################################################################
+#ADD VARIABLES WHICH CORRESPOND TO TOTAL AND SPENDING BY PROJECT
+################################################################
+
 bridge_spending_by_project_and_bridge <- bridge_spending_df %>%
   arrange(bridgeID,PROJECT_NO,projectYearStart) %>%
   group_by(PROJECT_NO, bridgeID) %>%
@@ -81,7 +88,10 @@ bridge_spending_by_project_and_bridge <- bridge_spending_df %>%
 write.table(bridge_spending_df, file="clean_data/bridge_spending_clean.csv", sep=",")
 write.table(bridge_spending_by_project_and_bridge, file="clean_data/bridge_spending_by_proj.csv", sep=",")
 
-##Noah: Create data frame which includes total and average bridge spending for a given bridge in a year
+#######################################################################################
+#ADD VARIABLES WHICH CORRESPOND TO TOTAL AND AVERAGE SPENDING BY BRIDGE AND BRIDGE-YEAR
+#######################################################################################
+
 bridge_spending_by_bridge_and_year <- bridge_spending_by_project_and_bridge %>%
   arrange(bridgeID, start_year) %>%
   group_by(bridgeID,start_year) %>%

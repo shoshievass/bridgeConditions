@@ -2,7 +2,7 @@
 ##
 ## Script name: Build Bridge Time Series, June 2018
 ##
-## Purpose of script:
+## Purpose of script: Create time series data for analysis
 ##
 ## Author: Shoshana Vasserman
 ##
@@ -25,6 +25,10 @@ library(lubridate)
 library(readxl)
 library(janitor)
 library(stringr)
+
+#####################
+#PRELIMINARY CLEANING
+#####################
 
 full_bridge_df_raw <- read_csv("raw_data/tblNbiMaHistorical1.19.18.csv") %>% clean_names()
 load("clean_data/bridge_spending_by_bridge_and_year.rdata") # loads spending dataframe w/ rows of bridgeNumbers split into one per row
@@ -95,6 +99,18 @@ full_bridge_df_sm <- full_bridge_df_raw %>%
   filter( no_inspection == 0) %>%
   select(-no_inspection)
 
+#####################################################
+#COLLAPSE DATA SO EACH OBSERVATION IS ONE BRIDGE-YEAR
+#####################################################
+
+#Multiple observations can correspond to the same bridge-year
+full_bridge_df_sm %>%
+  group_by(bridgeID, data_year) %>%
+  add_tally %>%
+  filter(n>1)
+
+#We want to collapse the data s.t each bridge-year is represented by a single observation
+#How do we determine the value taken on by each variable -- take the max!
 getMaxAdjusted <- function(vec){
   out = suppressWarnings( max(vec, na.rm=T) )
   if(is.infinite(out)){
@@ -105,23 +121,35 @@ getMaxAdjusted <- function(vec){
   }
 }
 
+bridge_df_by_bridge_and_year <- full_bridge_df_sm %>%
+  group_by(bridgeID, data_year) %>%
+  summarize_all(list(~getMaxAdjusted(.))) %>%
+  arrange(bridgeID, data_year) %>%
+  ungroup()
+
+##############################################################
+#GET RID OF MISSING VALUES BY REPLACING NAs WITH LAST OBSERVED
+##############################################################
+
+#Function used to count missing values
+checkNAs <- function(df){
+  df %>% apply(2,function(x) sum(is.na(x)))
+}
+
+#How many missing values do we initially have?
+checkNAs(full_bridge_df_sm)
+
 interpolateMissingValsWLastSeen <- function(vec){
   if(is.na(vec[1])){vec[1] = vec[2]}
   out <- zoo::na.locf(vec, na.rm = FALSE)
   return(out)
 }
 
-bridge_df_by_bridge_and_year <- full_bridge_df_sm %>%
-  group_by(bridgeID, data_year) %>%
-  summarize_all(funs(getMaxAdjusted(.))) %>%
-  arrange(bridgeID, data_year) %>%
-  ungroup()
-
 bridge_df_by_bridge_and_year <- bridge_df_by_bridge_and_year %>%
   arrange(bridgeID, data_year) %>%
   ungroup() %>%
+  mutate_at(vars(-deck,-superstructure,-substructure),list(~interpolateMissingValsWLastSeen(.))) %>%
   group_by(bridgeID) %>%
-  mutate_at(vars(-deck,-superstructure,-substructure),funs(interpolateMissingValsWLastSeen(.))) %>%
   mutate(
     num_obs = n(),
     percent_adt_truck_109 = ifelse(is.na(percent_adt_truck_109), max(percent_adt_truck_109, na.rm = T), percent_adt_truck_109), ## fill in missing gaps w/ overall max
@@ -135,20 +163,19 @@ bridge_df_by_bridge_and_year <- bridge_df_by_bridge_and_year %>%
   ) %>%
   filter(num_obs > 1)
 
-## Test NAs - looks good!
-bridge_df_by_bridge_and_year %>% apply(2,function(x) sum(is.na(x)))
+## Verify that we got rid of all the missing values
+checkNAs(bridge_df_by_bridge_and_year)
+
+#########################
+#MERGE WITH SPENDING DATA
+#########################
 
 
-# padded_bridge_times <- expand.grid(bridgeID = unique(bridge_df_by_bridge_and_year$bridgeID), data_year = unique(bridge_df_by_bridge_and_year$data_year))
-# bridge_timeseries_padded <- padded_bridge_times %>%
-#   left_join(bridge_df_by_bridge_and_year) %>%
-#   arrange(bridgeID, data_year)
-
-bridge_ts <- bridge_df_by_bridge_and_year %>% ## Note: This no longer has every year represented
+bridge_ts2 <- bridge_df_by_bridge_and_year %>% ## Note: This no longer has every year represented
   left_join(bridge_spending_by_bridge_and_year, by=c("bridgeID","data_year")) %>%
   arrange(bridgeID, data_year)
 
-bridge_ts <- bridge_ts %>%
+bridge_ts2 <- bridge_ts2 %>%
   arrange(bridgeID, data_year) %>%
   mutate(
     spending = ifelse(is.na(total_bridge_spending), 0, total_bridge_spending ),
@@ -157,6 +184,10 @@ bridge_ts <- bridge_ts %>%
     project_init_year = ifelse(spending > 0, first_start_year, NA)
   )
 
-# write_csv(bridge_ts, "data/databridge_timeseries.csv", na = "NA", col_names = T)
+###########
+#SAVE FILES
+###########
+
+write_csv(bridge_ts, "data/databridge_timeseries.csv", na = "NA", col_names = T)
 save(bridge_ts, file="clean_data/bridge_timeseries_june4.rdata")
 
