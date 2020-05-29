@@ -2,10 +2,10 @@ library(tidyverse)
 library(skimr)
 library(ggridges)
 library(rstan)
-library(conflicted)
+# library(conflicted)
 
-conflict_prefer("filter", "dplyr")
-conflict_prefer("lag", "dplyr")
+# conflict_prefer("filter", "dplyr")
+# conflict_prefer("lag", "dplyr")
 
 # Load complete time series
 load("data/bridge_timeseries_june4.rdata")
@@ -203,8 +203,8 @@ library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
-conflict_prefer("extract", "rstan")
-conflict_prefer("Position", "ggplot2")
+# conflict_prefer("extract", "rstan")
+# conflict_prefer("Position", "ggplot2")
 
 dgp_model <- stan_model("Models/msm_bridge_decay_v8_skinny.stan")
 
@@ -226,6 +226,7 @@ real_data_list <- list(
   T_b = T_b_df$T_b,
   N_b = T_b_df$n_b,
   X = X_train,
+  data_year = bridge_ts_train$data_year,
   #
   N_new = nrow(bridge_ts_test),
   B_new = length(unique(bridge_ts_test$bridgeID)),
@@ -242,6 +243,7 @@ real_data_list <- list(
   T_b_new = T_b_df_test$T_b,
   N_b_new = T_b_df_test$n_b,
   X_new = X_test,
+  data_year_new = bridge_ts_test$data_year,
   #
   run_estimation = 1
 )

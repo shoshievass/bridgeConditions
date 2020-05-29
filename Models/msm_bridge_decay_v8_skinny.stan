@@ -191,7 +191,7 @@ data {
  vector[N] spending;
  // int num_periods_lapsed[N]; // number of years since last observation of this bridge
  int T_b[B]; // number of periods observed for each bridge
- int N_b[B]; // number of periods observed for each bridge
+ int N_b[B]; // starting period observed for each bridge
  matrix[N, M] X;
  //
  int N_new; // number observations
@@ -204,7 +204,7 @@ data {
  int last_observed_deck_index_new[N_new];
  int last_observed_superstructure_index_new[N_new];
  int last_observed_substructure_index_new[N_new];
- int data_year_new[N];
+ int data_year_new[N_new];
 
 
  vector[N_new] spending_new;

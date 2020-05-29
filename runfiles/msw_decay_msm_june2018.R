@@ -144,6 +144,8 @@ plot(mle_discount_scalar, dgp_discount_scalar)
 estimated_model <- sampling(dgp_model, data = simulated_data_list, iter = 500, chains = 2, cores = 2)
 
 bayes_beta <- as.numeric(colMeans(as.data.frame(estimated_model, pars = "beta_deck")))
+print(estimated_model, pars = "beta_deck")
+
 plot(bayes_beta,dgp_beta)
 
 bayes_discount_scalar <- as.numeric(colMeans(as.data.frame(estimated_model, pars = "discount_scalar")))
