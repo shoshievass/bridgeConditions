@@ -76,6 +76,7 @@ functions{
       for(t in 1:T_f){
         n = n_b_f + t_b - 1 + t;
         if(deck_health_sim_f[n-1] != -999){
+          // are X_aug_f fixed for each bridge? Or do they need to be updated at each forecast horizon?
           deck_health_sim_f[n] = categorical_rng(softmax(beta_deck[deck_health_sim_f[n-1]] * X_aug_f[n]'));
         }
         else{deck_health_sim_f[n] = -999;}
@@ -222,10 +223,11 @@ transformed parameters{
   vector[N] discounted_spending;
   // vector[N_new] discounted_spending_new;
 
-
+  // why not define this on the bounded scale?
   discount_factor = inv_logit(discount_scalar);
 
   for(b in 1:B){
+    // I love this
     discounted_spending[N_b[b]:(N_b[b] + T_b[b] - 1)] = getDiscountingMatrix(T_b[b], discount_factor) * spending[N_b[b]:(N_b[b] + T_b[b] - 1)];
   }
 
@@ -246,7 +248,7 @@ model {
   matrix[N, M+1] X_aug;
   // matrix[N_new, M_new+1] X_aug_new;
 
-
+  // This seems like a prior that would imply a lot of depreciation--something like 50% a year
   discount_scalar ~ normal(0,1);
 
   for(i in 1:H){
@@ -268,7 +270,9 @@ model {
 
       for(t in 1:(t_b-1)){
         n = n_b + t;
-
+        // this is very clever.
+        // the thing I don't see is that if there is a skipped year, the generative model is
+        // p(X_t+s) = A^{s}X_t. You seemed to allow for that in the data construction, but not here.
         if(deck_health[n] != -999 && last_observed_deck_index[n] != -999){
           temp_lag_deck_index  = last_observed_deck_index[n];
           // print("obs index, deck helth, lag index, lag health: ", {n, deck_health[n], temp_lag_deck_index, deck_health[temp_lag_deck_index]});

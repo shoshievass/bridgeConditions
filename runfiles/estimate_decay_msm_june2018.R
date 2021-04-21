@@ -8,7 +8,7 @@ library(rstan)
 # conflict_prefer("lag", "dplyr")
 
 # Load complete time series
-load("data/bridge_timeseries_june4.rdata")
+load("data/estimation_jun4.rdata")
 
 set.seed(4242)
 
@@ -91,6 +91,7 @@ bridge_ts_train <- bridge_ts_train %>%
     time_lag = dplyr::lag(data_year, default = 1990),
     time_lag = ifelse(time_lag == 1990 & data_year != 1991, data_year, time_lag),
     time_laps = data_year - time_lag,
+    # I really like this ^^ -- good idea (reminder to self to make sure it's being used properly)
     age = pmax(data_year - year_built_latest, 0)
   ) %>%
   ungroup() %>%
@@ -98,7 +99,7 @@ bridge_ts_train <- bridge_ts_train %>%
     rn = row_number(),
     deck_nm_rn = ifelse(deck == -999, NA, rn),
     superstructure_nm_rn = ifelse(superstructure == -999, NA, rn),
-    substructure_nm_rn = ifelse(substructure == -999, NA, rn),
+    substructure_nm_rn = ifelse(substructure == -999, NA, rn)
   ) %>%
   group_by(bridgeID) %>%
   mutate(
@@ -114,7 +115,7 @@ bridge_ts_train <- bridge_ts_train %>%
   mutate(
     deck_nm_rn_lag = ifelse(is.na(deck_nm_rn_lag), -999, deck_nm_rn_lag),
     superstructure_nm_rn_lag = ifelse(is.na(superstructure_nm_rn_lag), -999, superstructure_nm_rn_lag),
-    substructure_nm_rn_lag = ifelse(is.na(substructure_nm_rn_lag), -999, substructure_nm_rn_lag),
+    substructure_nm_rn_lag = ifelse(is.na(substructure_nm_rn_lag), -999, substructure_nm_rn_lag)
   ) %>%
   select(
     -deck_nm_rn,
@@ -208,6 +209,7 @@ options(mc.cores = parallel::detectCores())
 
 dgp_model <- stan_model("Models/msm_bridge_decay_v8_skinny.stan")
 
+# Do we want millions of dollars or d% in dollars?
 w <- 1e6 # for scaling spending
 
 real_data_list <- list(
@@ -250,7 +252,7 @@ real_data_list <- list(
 
 system.time(model_fit_opt <- optimizing(dgp_model, data = real_data_list, init=1, verbose = T))
 
-save.image("data/bridge_estimation_june4b.rdata")
+save.image("data/bridge_estimation_june4c.rdata")
 
 #
 get_opt_est <- function(x, par) {
